@@ -28,12 +28,12 @@ end
 
 Dir.entries(@queue_path).each do |file|
   if File.file?(@queue_path +"/"+file)
-    response = %x[#{File.dirname(__FILE__)}/grabSubtitles.rb "#{file}"]
+    response = %x["#{File.dirname(__FILE__)}/grabSubtitles.rb" "#{file}"]
     if response =~ /true/i
-      puts "subtitle fetched"
+      puts "subtitle fetched " + file
       File.delete("#{@queue_path}/#{file}")
     else
-      puts "subtitle not fetched"
+      puts "subtitle not fetched " + file
     end
   end
 end

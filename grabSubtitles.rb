@@ -5,10 +5,11 @@ require 'rubygems'
 require 'open-uri'
 require 'hpricot'
 require 'tvdb'
-
+require 'prowl'
+require 'notifo'
 DEBUG = true
 
-@save_path = "/Users/hec/Desktop"
+@save_path = "/Volumes/Bonnie/TV Shows"
 
 
 
@@ -32,7 +33,7 @@ end
 
 def get_subtitle_url(language, episode_table)
   (episode_table/"tr/td.language").each do |lang|
-    language_sub = lang.inner_html.strip
+    language_sub = lang.inner_html.strip.force_encoding('UTF-8')
     if language_sub =~ /#{language}/i
         # puts "Language #{language} found"
         if not lang.next_sibling.inner_html =~ /[0-9]+\.?[0-9]*% Completado/i
@@ -151,7 +152,7 @@ doc = Hpricot(@response)
 
 shows = []
 doc.search("a").each do |show|
-  show_name = show.inner_html
+  show_name = show.inner_html.force_encoding('UTF-8')
   show_href = show.attributes['href']
   if show_name =~ /#{@find_show}/i
     # puts "Found show #{show_name}"
@@ -225,24 +226,46 @@ tvdb_show.episodes.each do |ep|
 
 end
 
-
+result = true
 english_sub = get_subtitle_url('English', @episode_table)
 if english_sub
   save_to_file(english_sub, "English")
+else
+  puts false
+  exit 0
 end
 
 spanish_sub = get_subtitle_url('España', @episode_table)
 if spanish_sub
   save_to_file(spanish_sub, "Spanish")
+  result &&= true
 else
   latin_sub = get_subtitle_url('Latinoamérica', @episode_table)
   if latin_sub
     save_to_file(spanish_sub, "Spanish")
+    result &&= true
+  else
+    spa_sub = get_subtitle_url('Español', @episode_table)
+    if spa_sub
+      save_to_file(spa_sub, "Spanish")
+    else
+      puts false
+      exit 0
+    end
   end
 end
 
-%x[growlnotify -a /Applications/Plex.app -n "Subtitles Downloader" -t "Subtitles Downloader" -m "Subtitles for #{@find_show} - #{@find_season}x#{@find_episode} - #{@episode_name} downloaded" ]
+# %x[growlnotify -a /Applications/Plex.app -n "Subtitles Downloader" -t "Subtitles Downloader" -m "Subtitles for #{@find_show} - #{@find_season}x#{@find_episode} - #{@episode_name} downloaded" ]
 
 puts true
 
+# Prowl.add(
+#   :apikey => '2d70ebcea424a7631db423eec4fa65255a2956dc',
+#   :application => 'Subtitles Downloader',
+#   :event => "Download",
+#   :description => "Subtitles for #{@find_show} - #{@find_season}x#{@find_episode} - #{@episode_name} downloaded"
+# )
 
+notifo = Notifo.new('subtitledownloader', '05f54bd0deae0538e0a1ebbc05f4ae28ba1daf88')
+notifo.post('hecspc', "Subtitles for #{@find_show} - #{@find_season}x#{@find_episode} - #{@episode_name} downloaded", "Download")
+ 
