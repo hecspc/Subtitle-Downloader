@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 # encoding: utf-8
-
+require 'rubygems'
 require 'subtitulos_downloader'
 require 'notifo'
 
